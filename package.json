@@ -1,0 +1,36 @@
+{
+  "name": "facebook-comment-scraper-api",
+  "version": "1.0.0",
+  "description": "REST API for scraping Facebook post comments using Puppeteer, with DuckDuckGo Facebook search",
+  "main": "dist/lib.js",
+  "types": "dist/lib.d.ts",
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "facebook",
+    "scraper",
+    "comments",
+    "puppeteer",
+    "duckduckgo",
+    "search"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "duck-duck-scrape": "^2.2.7",
+    "express": "^4.18.2",
+    "puppeteer": "^22.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
