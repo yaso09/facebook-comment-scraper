@@ -1,22 +1,22 @@
-import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
-import { searchFacebook, SearchType } from '../search';
-import { logger } from '../utils/logger';
+const { Router } = require('express');
+const { authMiddleware } = require('../middleware/auth');
+const { searchFacebook } = require('../search');
+const { logger } = require('../utils/logger');
 
 const router = Router();
 router.use(authMiddleware);
 
-router.get('/', async (req: Request, res: Response) => {
-  const q = req.query.q as string | undefined;
-  const rawType = (req.query.type as string) || 'general';
+router.get('/', async (req, res) => {
+  const q = req.query.q;
+  const rawType = req.query.type || 'general';
 
   if (!q || !q.trim()) {
     res.status(400).json({ error: 'Missing query parameter "q"' });
     return;
   }
 
-  const searchType: SearchType = ['profile', 'reel', 'general'].includes(rawType)
-    ? (rawType as SearchType)
+  const searchType = ['profile', 'reel', 'general'].includes(rawType)
+    ? rawType
     : 'general';
 
   logger.info(`Search: type=${searchType} query="${q}"`);
@@ -31,4 +31,4 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-export default router;
+module.exports = router;

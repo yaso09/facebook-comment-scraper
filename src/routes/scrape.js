@@ -1,14 +1,15 @@
-import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
-import { jobStore } from '../storage/job-store';
-import { scrapeFacebookPost } from '../scraper/facebook';
-import { logger } from '../utils/logger';
+const { Router } = require('express');
+const { waitUntil } = require('@vercel/functions');
+const { authMiddleware } = require('../middleware/auth');
+const { jobStore } = require('../storage/job-store');
+const { scrapeFacebookPost } = require('../scraper/facebook');
+const { logger } = require('../utils/logger');
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req, res) => {
   const { url } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -23,24 +24,28 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  const job = jobStore.create(url);
+  const job = await jobStore.create(url);
   logger.info(`Job ${job.id} created for ${url}`);
 
-  processJob(job.id);
+  if (process.env.VERCEL) {
+    waitUntil(processJob(job.id));
+  } else {
+    void processJob(job.id);
+  }
 
   res.status(201).json({ jobId: job.id, status: job.status });
 });
 
-router.get('/:jobId', (req: Request, res: Response) => {
+router.get('/:jobId', async (req, res) => {
   const { jobId } = req.params;
-  const job = jobStore.get(jobId);
+  const job = await jobStore.get(jobId);
 
   if (!job) {
     res.status(404).json({ error: 'Job not found' });
     return;
   }
 
-  const response: Record<string, unknown> = {
+  const response = {
     jobId: job.id,
     status: job.status,
   };
@@ -56,21 +61,21 @@ router.get('/:jobId', (req: Request, res: Response) => {
   res.json(response);
 });
 
-async function processJob(jobId: string) {
-  const job = jobStore.get(jobId);
+async function processJob(jobId) {
+  const job = await jobStore.get(jobId);
   if (!job) return;
 
-  jobStore.update(jobId, { status: 'processing' });
+  await jobStore.update(jobId, { status: 'processing' });
 
   try {
     const result = await scrapeFacebookPost(job.url);
-    jobStore.update(jobId, { status: 'completed', result });
+    await jobStore.update(jobId, { status: 'completed', result });
     logger.info(`Job ${jobId} completed: ${result.totalComments} comments`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     logger.error(`Job ${jobId} failed: ${errorMessage}`);
-    jobStore.update(jobId, { status: 'failed', error: errorMessage });
+    await jobStore.update(jobId, { status: 'failed', error: errorMessage });
   }
 }
 
-export default router;
+module.exports = router;

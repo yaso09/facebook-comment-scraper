@@ -1,6 +1,5 @@
-import { createPage } from './browser';
-import { ScrapeResult, ScrapedComment } from './types';
-import { logger } from '../utils/logger';
+const { createPage, closeBrowser } = require('./browser');
+const { logger } = require('../utils/logger');
 
 const SCRAPE_SCRIPT = `
 (async () => {
@@ -121,9 +120,9 @@ const SCRAPE_SCRIPT = `
 })()
 `;
 
-export async function scrapeFacebookPost(url: string): Promise<ScrapeResult> {
+async function scrapeFacebookPost(url) {
   const startTime = Date.now();
-  const page = await createPage();
+  const { page, browser } = await createPage();
 
   try {
     logger.info(`Navigating to ${url}`);
@@ -135,7 +134,7 @@ export async function scrapeFacebookPost(url: string): Promise<ScrapeResult> {
 
     logger.info('Starting scroll/click loop');
     const raw = await page.evaluate(SCRAPE_SCRIPT);
-    const comments = (Array.isArray(raw) ? raw : []) as ScrapedComment[];
+    const comments = Array.isArray(raw) ? raw : [];
 
     logger.info(`Scraped ${comments.length} comments`);
 
@@ -152,5 +151,8 @@ export async function scrapeFacebookPost(url: string): Promise<ScrapeResult> {
     throw err;
   } finally {
     try { await page.close(); } catch { /* ignore */ }
+    await closeBrowser(browser);
   }
 }
+
+module.exports = { scrapeFacebookPost };

@@ -5,9 +5,9 @@ Node.js REST API for scraping Facebook post comments using Puppeteer, plus Faceb
 ## Tech Stack
 
 - **Runtime:** Node.js 20+
-- **Language:** TypeScript
+- **Language:** JavaScript
 - **Framework:** Express.js
-- **Scraper:** Puppeteer (headless browser)
+- **Scraper:** Puppeteer-core via Browserless.io (WebSocket)
 - **Search:** duck-duck-scrape
 
 ## API
@@ -106,39 +106,63 @@ git clone <repo>
 cd facebook-comment-scraper
 npm install
 set API_KEY=my-secret-key
+set BROWSERLESS_TOKEN=your-browserless-token
 npm run dev
 ```
+
+## Deploy (Vercel)
+
+1. Push repo to GitHub and import in [Vercel](https://vercel.com).
+2. Add **Upstash Redis** from [Vercel Marketplace](https://vercel.com/marketplace?category=storage&search=redis) — required for async scrape job polling across serverless invocations.
+3. Set environment variables:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_KEY` | Yes | Auth key for all endpoints |
+| `BROWSERLESS_TOKEN` | Yes | [Browserless.io](https://browserless.io) API token |
+| `UPSTASH_REDIS_REST_URL` | Yes (Vercel) | Auto-set when Redis is linked |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes (Vercel) | Auto-set when Redis is linked |
+
+Optional Browserless overrides: `BROWSERLESS_WS_HOST` (default `production-sfo.browserless.io`), `BROWSERLESS_WS_PATH` (default `/chromium`).
+
+Scrape jobs run in the background via `waitUntil` (max 300s on Pro). Hobby plan has a 60s function limit — upgrade or shorten scrapes if needed.
 
 ## Deploy (Railway)
 
 ```bash
-npm run build
 npm start
 ```
 
-Set `API_KEY` in Railway dashboard → Variables.
+Set `API_KEY` and `BROWSERLESS_TOKEN` in Railway dashboard → Variables. Redis is optional on Railway (in-memory job store works with a single replica).
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `API_KEY` | Yes | — | Auth key for all endpoints |
-| `PORT` | No | 3000 | Server port |
+| `BROWSERLESS_TOKEN` | Yes | — | Browserless.io API token for remote Chromium |
+| `BROWSERLESS_WS_HOST` | No | `production-sfo.browserless.io` | Browserless WebSocket host |
+| `BROWSERLESS_WS_PATH` | No | `/chromium` | Browserless WebSocket path |
+| `UPSTASH_REDIS_REST_URL` | Vercel | — | Upstash Redis REST URL (job polling) |
+| `UPSTASH_REDIS_REST_TOKEN` | Vercel | — | Upstash Redis REST token |
+| `PORT` | No | 3000 | Server port (local/Railway only) |
 | `LOG_LEVEL` | No | info | debug, info, warn, error |
 
 ## Project Structure
 
 ```
 src/
-├── index.ts              # Express server
-├── middleware/auth.ts     # API key auth
+├── index.js              # Express server
+├── lib.js                # Public exports
+├── middleware/auth.js    # API key auth
 ├── routes/
-│   ├── scrape.ts          # POST + GET /api/scrape
-│   └── search.ts          # GET /api/search
+│   ├── scrape.js         # POST + GET /api/scrape
+│   └── search.js         # GET /api/search
 ├── scraper/
-│   ├── browser.ts         # Puppeteer launch
-│   ├── facebook.ts        # Facebook scraping logic
-│   └── types.ts           # Types
-├── storage/job-store.ts   # In-memory job store (1h TTL)
-└── utils/logger.ts        # Logger
+│   ├── browser.js        # puppeteer-core → Browserless WebSocket
+│   └── facebook.js       # Facebook scraping logic
+├── storage/job-store.js  # In-memory or Upstash Redis job store (1h TTL)
+└── utils/logger.js       # Logger
+api/
+└── index.js              # Vercel serverless entry
 ```

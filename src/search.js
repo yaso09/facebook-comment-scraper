@@ -1,34 +1,12 @@
-import { search, SafeSearchType } from 'duck-duck-scrape';
+const { search, SafeSearchType } = require('duck-duck-scrape');
 
-export type SearchType = 'profile' | 'reel' | 'general';
-
-export interface SearchResultItem {
-  title: string;
-  url: string;
-  description: string;
-  hostname: string;
-  icon: string;
-}
-
-export interface SearchResults {
-  query: string;
-  searchType: SearchType;
-  fullQuery: string;
-  noResults: boolean;
-  total: number;
-  results: SearchResultItem[];
-}
-
-const SITE_PREFIXES: Record<SearchType, string> = {
+const SITE_PREFIXES = {
   profile: 'site:facebook.com/p',
   reel: 'site:facebook.com/reel',
   general: 'site:facebook.com',
 };
 
-export async function searchFacebook(
-  query: string,
-  searchType: SearchType = 'general'
-): Promise<SearchResults> {
+async function searchFacebook(query, searchType = 'general') {
   const sitePrefix = SITE_PREFIXES[searchType];
   const fullQuery = `${sitePrefix} ${query.trim()}`;
 
@@ -49,3 +27,5 @@ export async function searchFacebook(
     })),
   };
 }
+
+module.exports = { searchFacebook };
