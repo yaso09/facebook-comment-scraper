@@ -11,8 +11,8 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.use('/api/scrape', scrapeRouter);
-app.use('/api/search', searchRouter);
+app.use('/scrape', scrapeRouter);
+app.use('/search', searchRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });

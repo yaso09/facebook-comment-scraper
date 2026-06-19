@@ -1,7 +1,7 @@
 import requests
 from requests.structures import CaseInsensitiveDict
 
-url = "http://localhost:8000/api/scrape"
+url = "http://localhost:8000/scrape"
 
 headers = CaseInsensitiveDict()
 headers["x-api-key"] = "deneme"

@@ -14,12 +14,12 @@ Node.js REST API for scraping Facebook post comments using Puppeteer, plus Faceb
 
 All endpoints require `x-api-key` header. Returns 401 if missing or invalid.
 
-### `POST /api/scrape`
+### `POST /scrape`
 
-Submit a scrape job. Returns `jobId` immediately — poll `GET /api/scrape/:jobId` for results.
+Submit a scrape job. Returns `jobId` immediately — poll `GET /scrape/:jobId` for results.
 
 ```bash
-curl -X POST http://localhost:3000/api/scrape \
+curl -X POST http://localhost:3000/scrape \
   -H "x-api-key: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://facebook.com/some-post"}'
@@ -27,12 +27,12 @@ curl -X POST http://localhost:3000/api/scrape \
 
 **Response (201):** `{ "jobId": "abc123", "status": "queued" }`
 
-### `GET /api/scrape/:jobId`
+### `GET /scrape/:jobId`
 
 Poll job status. States: `queued` → `processing` → `completed` | `failed`
 
 ```bash
-curl http://localhost:3000/api/scrape/abc123 \
+curl http://localhost:3000/scrape/abc123 \
   -H "x-api-key: your-api-key"
 ```
 
@@ -55,7 +55,7 @@ curl http://localhost:3000/api/scrape/abc123 \
 
 **Response (failed):** `{ "jobId": "abc123", "status": "failed", "error": "..." }`
 
-### `GET /api/search?q=kelime&type=profile`
+### `GET /search?q=kelime&type=profile`
 
 Searches Facebook content via DuckDuckGo with `site:facebook.com` prefix.
 
@@ -73,7 +73,7 @@ Searches Facebook content via DuckDuckGo with `site:facebook.com` prefix.
 | `general` | `site:facebook.com {q}` | General search |
 
 ```bash
-curl "http://localhost:3000/api/search?q=ahmet&type=profile" \
+curl "http://localhost:3000/search?q=ahmet&type=profile" \
   -H "x-api-key: your-api-key"
 ```
 
@@ -156,8 +156,8 @@ src/
 ├── lib.js                # Public exports
 ├── middleware/auth.js    # API key auth
 ├── routes/
-│   ├── scrape.js         # POST + GET /api/scrape
-│   └── search.js         # GET /api/search
+│   ├── scrape.js         # POST + GET /scrape
+│   └── search.js         # GET /search
 ├── scraper/
 │   ├── browser.js        # puppeteer-core → Browserless WebSocket
 │   └── facebook.js       # Facebook scraping logic
