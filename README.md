@@ -1,6 +1,6 @@
 # Facebook Comment Scraper API
 
-Node.js REST API for scraping Facebook post comments using Puppeteer, plus Facebook-targeted search via DuckDuckGo.
+Node.js REST API for scraping Facebook post comments and page info using Puppeteer, plus Facebook-targeted search via Google.
 
 ## Tech Stack
 
@@ -8,7 +8,7 @@ Node.js REST API for scraping Facebook post comments using Puppeteer, plus Faceb
 - **Language:** JavaScript
 - **Framework:** Express.js
 - **Scraper:** Puppeteer-core via Browserless.io (WebSocket)
-- **Search:** duck-duck-scrape
+- **Search:** Google via Puppeteer (Browserless.io)
 
 ## API
 
@@ -57,20 +57,21 @@ curl http://localhost:3000/scrape/abc123 \
 
 ### `GET /search?q=kelime&type=profile`
 
-Searches Facebook content via DuckDuckGo with `site:facebook.com` prefix.
+Searches Facebook content via **Google** using Puppeteer (Browserless.io).  
+Every result URL is classified by type — `type` parameter acts as a **filter**, not a query modifier.
 
 | Param | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `q` | yes | — | Search query |
-| `type` | no | `general` | `profile`, `reel`, or `general` |
+| `type` | no | `general` | Filter: `profile`, `reel`, or `general` |
 
-**Search types:**
+**URL-based type classification:**
 
-| type | Sends to DuckDuckGo | Use case |
-|------|---------------------|----------|
-| `profile` | `site:facebook.com/p {q}` | Find people |
-| `reel` | `site:facebook.com/reel {q}` | Find reels |
-| `general` | `site:facebook.com {q}` | General search |
+| Type | URL pattern |
+|------|-------------|
+| `profile` | `/p/`, `/photo/`, `/photos/`, `profile.php` |
+| `reel` | `/reel/` |
+| `general` | Everything else |
 
 ```bash
 curl "http://localhost:3000/search?q=ahmet&type=profile" \
@@ -82,11 +83,46 @@ curl "http://localhost:3000/search?q=ahmet&type=profile" \
 {
   "query": "ahmet",
   "searchType": "profile",
-  "fullQuery": "site:facebook.com/p ahmet",
-  "total": 10,
+  "fullQuery": "site:facebook.com ahmet",
+  "total": 5,
   "results": [
-    { "title": "Ahmet Yılmaz", "url": "https://facebook.com/...", "description": "...", "hostname": "facebook.com" }
+    { "title": "Ahmet Yılmaz", "url": "https://facebook.com/p/123", "description": "...", "type": "profile" }
   ]
+}
+```
+
+### `GET /page-info?url=https://facebook.com/SomePage`
+
+Scrapes public Facebook page information (name, category, contact, social links, stats) using Puppeteer (Browserless.io).
+
+| Param | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `url` | yes | — | Full Facebook page URL |
+
+```bash
+curl "http://localhost:3000/page-info?url=https://facebook.com/SomePage" \
+  -H "x-api-key: your-api-key"
+```
+
+**Response:**
+```json
+{
+  "url": "https://facebook.com/SomePage",
+  "page_name": "SomePage",
+  "page_category": "Brand",
+  "email": "contact@example.com",
+  "phone_number": "+90 555 123 4567",
+  "page_website": "https://example.com",
+  "social_media_links": [
+    "https://instagram.com/somepage",
+    "https://twitter.com/somepage"
+  ],
+  "location": "İstanbul, Türkiye",
+  "page_likes": "1.2M",
+  "page_followers": "1.5M",
+  "page_following": "100",
+  "page_rate": "4.6",
+  "page_review_number": "1240"
 }
 ```
 
@@ -154,10 +190,12 @@ Set `API_KEY` and `BROWSERLESS_TOKEN` in Railway dashboard → Variables. Redis 
 src/
 ├── index.js              # Express server
 ├── lib.js                # Public exports
+├── page-info.js           # Facebook page info scraper
 ├── middleware/auth.js    # API key auth
 ├── routes/
 │   ├── scrape.js         # POST + GET /scrape
-│   └── search.js         # GET /search
+│   ├── search.js         # GET /search
+│   └── page-info.js      # GET /page-info
 ├── scraper/
 │   ├── browser.js        # puppeteer-core → Browserless WebSocket
 │   └── facebook.js       # Facebook scraping logic
